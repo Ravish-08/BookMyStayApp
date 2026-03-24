@@ -124,4 +124,126 @@ public class BookMyStayApp {
 
         System.out.println("\nSystem continues running safely...");
     }
+}import java.util.*;
+
+/**
+ * Inventory Service
+ */
+class RoomInventory {
+
+    private Map<String, Integer> availabilityMap = new HashMap<>();
+
+    public RoomInventory() {
+        availabilityMap.put("Single Room", 1);
+        availabilityMap.put("Double Room", 1);
+    }
+
+    public int getAvailability(String roomType) {
+        return availabilityMap.getOrDefault(roomType, 0);
+    }
+
+    public void reduce(String roomType) {
+        availabilityMap.put(roomType, availabilityMap.get(roomType) - 1);
+    }
+
+    public void increase(String roomType) {
+        availabilityMap.put(roomType, availabilityMap.get(roomType) + 1);
+    }
+}
+
+/**
+ * Booking Service
+ */
+class BookingService {
+
+    private Map<String, String> bookings = new HashMap<>(); // reservationId → roomType
+
+    public String bookRoom(String guestName, String roomType, RoomInventory inventory) {
+
+        if (inventory.getAvailability(roomType) <= 0) {
+            System.out.println("Booking Failed for " + guestName);
+            return null;
+        }
+
+        String reservationId = "RES-" + UUID.randomUUID().toString().substring(0, 4);
+
+        inventory.reduce(roomType);
+        bookings.put(reservationId, roomType);
+
+        System.out.println("Booking Confirmed: " + guestName + " → " + reservationId);
+
+        return reservationId;
+    }
+
+    public Map<String, String> getBookings() {
+        return bookings;
+    }
+}
+
+/**
+ * Cancellation Service
+ */
+class CancellationService {
+
+    private Stack<String> rollbackStack = new Stack<>();
+
+    public void cancelBooking(String reservationId,
+                              BookingService bookingService,
+                              RoomInventory inventory) {
+
+        Map<String, String> bookings = bookingService.getBookings();
+
+        // Validate
+        if (!bookings.containsKey(reservationId)) {
+            System.out.println("Cancellation Failed: Invalid Reservation ID");
+            return;
+        }
+
+        String roomType = bookings.get(reservationId);
+
+        // Rollback steps
+        rollbackStack.push(reservationId); // track rollback
+        inventory.increase(roomType);      // restore inventory
+        bookings.remove(reservationId);    // remove booking
+
+        System.out.println("Cancellation Successful for " + reservationId);
+        System.out.println("Room restored to inventory: " + roomType);
+    }
+
+    public void showRollbackHistory() {
+        System.out.println("\nRollback History (LIFO):");
+        while (!rollbackStack.isEmpty()) {
+            System.out.println(rollbackStack.pop());
+        }
+    }
+}
+
+/**
+ * Main Class
+ * @version 10.0
+ */
+public class BookMyStayApp {
+
+    public static void main(String[] args) {
+
+        System.out.println("Booking Cancellation & Rollback System\n");
+
+        RoomInventory inventory = new RoomInventory();
+        BookingService bookingService = new BookingService();
+        CancellationService cancellationService = new CancellationService();
+
+        // Step 1: Book rooms
+        String r1 = bookingService.bookRoom("Alice", "Single Room", inventory);
+        String r2 = bookingService.bookRoom("Bob", "Double Room", inventory);
+
+        // Step 2: Cancel booking
+        System.out.println("\n--- Cancellation Process ---");
+        cancellationService.cancelBooking(r1, bookingService, inventory);
+
+        // Step 3: Invalid cancellation
+        cancellationService.cancelBooking("INVALID", bookingService, inventory);
+
+        // Step 4: Show rollback history
+        cancellationService.showRollbackHistory();
+    }
 }
