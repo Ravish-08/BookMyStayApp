@@ -87,7 +87,6 @@ public class BookMyStayApp {
         // Display selected services
         manager.displayServices(reservationId);
 
-        // Show total cost
         double total = manager.calculateTotalCost(reservationId);
 
         System.out.println("\nTotal Add-On Cost: ₹" + total);
