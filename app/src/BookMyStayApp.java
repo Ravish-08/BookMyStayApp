@@ -120,6 +120,7 @@ public class BookMyStayApp {
                 System.out.println("Booking Failed: " + e.getMessage());
             }
         }
+        double total = manager.calculateTotalCost(reservationId);
 
         System.out.println("\nSystem continues running safely...");
     }
